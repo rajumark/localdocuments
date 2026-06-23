@@ -17,4 +17,17 @@
     <string name="mode_full">Full</string>
     <string name="mode_base">Base</string>
     <string name="mode_base_filter">Base + Filter</string>
+    <string name="tab_scan">Scan</string>
+    <string name="tab_pdfs">PDFs</string>
+    <string name="search_pdfs">Search PDFs by name…</string>
+    <string name="pdf_section_today">Today</string>
+    <string name="pdf_section_yesterday">Yesterday</string>
+    <string name="pdf_section_week">This Week</string>
+    <string name="pdf_section_month">This Month</string>
+    <string name="pdf_section_earlier">Earlier</string>
+    <string name="no_pdfs_found">No PDFs found on device</string>
+    <string name="no_pdfs_search">No PDFs match your search</string>
+    <string name="pdf_storage_permission">Storage Access</string>
+    <string name="pdf_permission_denied">Storage permission is needed to list PDFs on your device</string>
+    <string name="open_pdf">Open PDF</string>
 </resources>
