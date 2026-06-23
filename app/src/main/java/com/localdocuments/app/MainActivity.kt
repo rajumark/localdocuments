@@ -200,6 +200,15 @@ fun LocalDocumentsApp(
                             Uri.encode(name)
                         )
                     )
+                },
+                onOpenPdfAtPage = { uri, name, page ->
+                    navController.navigate(
+                        Viewer.createRoute(
+                            Uri.encode(uri),
+                            Uri.encode(name),
+                            page
+                        )
+                    )
                 }
             )
         }
@@ -207,7 +216,11 @@ fun LocalDocumentsApp(
             route = Viewer.route,
             arguments = listOf(
                 navArgument("uri") { type = NavType.StringType },
-                navArgument("name") { type = NavType.StringType }
+                navArgument("name") { type = NavType.StringType },
+                navArgument("page") {
+                    type = NavType.IntType
+                    defaultValue = 0
+                }
             )
         ) { backStackEntry ->
             val uri = Uri.decode(
@@ -216,6 +229,7 @@ fun LocalDocumentsApp(
             val name = Uri.decode(
                 backStackEntry.arguments?.getString("name") ?: "PDF"
             )
+            val page = backStackEntry.arguments?.getInt("page") ?: 0
             val pdfUri = Uri.parse(uri)
 
             val viewModel: PdfViewerViewModel = viewModel()
@@ -225,7 +239,7 @@ fun LocalDocumentsApp(
             }
 
             LaunchedEffect(pdfUri) {
-                viewModel.loadPdf(pdfUri, screenWidthPx)
+                viewModel.loadPdf(pdfUri, screenWidthPx, page)
             }
 
             PdfViewerScreen(

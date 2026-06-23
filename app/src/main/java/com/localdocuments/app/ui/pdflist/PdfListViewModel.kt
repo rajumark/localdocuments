@@ -7,9 +7,16 @@ import android.net.Uri
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import com.localdocuments.app.data.db.AppDatabase
+import com.localdocuments.app.data.db.PdfSearchResult
+import com.localdocuments.app.data.indexer.PdfIndexer
 import com.localdocuments.app.data.model.PdfDocument
 import com.localdocuments.app.data.model.PdfGroup
 import com.localdocuments.app.data.repository.PdfRepository
+import com.localdocuments.app.data.worker.PdfIndexWorker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,12 +32,17 @@ data class PdfListUiState(
     val isPermissionGranted: Boolean = false,
     val isGridView: Boolean = false,
     val selectedUris: Set<Uri> = emptySet(),
-    val showDeleteConfirmation: Boolean = false
+    val showDeleteConfirmation: Boolean = false,
+    val searchResults: List<PdfSearchResult> = emptyList(),
+    val isSearchingContent: Boolean = false,
+    val pendingIndexCount: Int = 0
 )
 
 class PdfListViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = PdfRepository(application.contentResolver)
+    private val db = AppDatabase.getInstance(application)
+    private val indexer = PdfIndexer(application)
 
     private val _uiState = MutableStateFlow(PdfListUiState())
     val uiState: StateFlow<PdfListUiState> = _uiState.asStateFlow()
@@ -41,14 +53,57 @@ class PdfListViewModel(application: Application) : AndroidViewModel(application)
 
     val isSelectionMode: Boolean get() = _uiState.value.selectedUris.isNotEmpty()
 
+    init {
+        viewModelScope.launch {
+            db.searchDao().getPendingCount().collect { count ->
+                _uiState.update { it.copy(pendingIndexCount = count) }
+            }
+        }
+    }
+
     fun loadDocuments() {
         if (!_uiState.value.isPermissionGranted) return
         _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch(Dispatchers.IO) {
             allDocuments = repository.getPdfDocuments()
+            syncIndexWithDocuments()
             updateGroups()
+            scheduleIndexing()
             _uiState.update { it.copy(isLoading = false) }
         }
+    }
+
+    private suspend fun syncIndexWithDocuments() {
+        val indexedUris = db.searchDao().getAllIndexedUris().toSet()
+        val currentUriSet = allDocuments.map { it.uri.toString() }.toSet()
+
+        val removedUris = indexedUris - currentUriSet
+        removedUris.forEach { uriStr ->
+            db.searchDao().deletePagesForUri(uriStr)
+            db.searchDao().deleteStatus(uriStr)
+        }
+
+        val statusUris = db.searchDao().getAllIndexedUris().toSet()
+        allDocuments.filter { it.uri.toString() !in statusUris }.forEach { doc ->
+            db.searchDao().insertOrUpdateStatus(
+                com.localdocuments.app.data.db.PdfIndexStatusEntity(
+                    uri = doc.uri.toString(),
+                    fileName = doc.name,
+                    pageCount = 0,
+                    isIndexed = false
+                )
+            )
+        }
+    }
+
+    private fun scheduleIndexing() {
+        val work = OneTimeWorkRequestBuilder<PdfIndexWorker>().build()
+        WorkManager.getInstance(getApplication())
+            .enqueueUniqueWork(
+                "pdf_indexing",
+                ExistingWorkPolicy.KEEP,
+                work
+            )
     }
 
     fun setPermissionGranted(granted: Boolean) {
@@ -57,8 +112,22 @@ class PdfListViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun setSearchQuery(query: String) {
-        _uiState.update { it.copy(searchQuery = query) }
-        updateGroups()
+        _uiState.update { it.copy(searchQuery = query, isSearchingContent = query.isNotBlank()) }
+        if (query.isBlank()) {
+            _uiState.update { it.copy(searchResults = emptyList(), isSearchingContent = false) }
+            updateGroups()
+        } else {
+            updateGroups()
+            searchContent(query)
+        }
+    }
+
+    private fun searchContent(query: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val terms = query.trim().split(Regex("\\s+")).joinToString(" ") { "${it}*" }
+            val results = db.searchDao().searchPages(terms)
+            _uiState.update { it.copy(searchResults = results) }
+        }
     }
 
     fun toggleViewMode() {
@@ -107,6 +176,7 @@ class PdfListViewModel(application: Application) : AndroidViewModel(application)
                 try {
                     contentResolver.delete(uri, null, null)
                 } catch (_: Exception) { }
+                indexer.removeFromIndex(uri)
             }
             allDocuments = allDocuments.filter { it.uri !in uris }
             thumbnails.keys.removeAll(uris)

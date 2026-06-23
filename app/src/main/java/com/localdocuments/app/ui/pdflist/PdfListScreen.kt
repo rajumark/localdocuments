@@ -32,14 +32,11 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.automirrored.filled.ViewList
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.automirrored.filled.ViewList
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -71,6 +68,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.localdocuments.app.data.db.PdfSearchResult
 import com.localdocuments.app.data.model.PdfDocument
 import com.localdocuments.app.data.model.PdfGroup
 import java.text.SimpleDateFormat
@@ -82,6 +80,7 @@ import java.util.Locale
 fun PdfListScreen(
     viewModel: PdfListViewModel,
     onOpenPdf: (String, String) -> Unit = { _, _ -> },
+    onOpenPdfAtPage: (String, String, Int) -> Unit = { _, _, _ -> },
     onScan: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -187,6 +186,29 @@ fun PdfListScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
+            if (state.pendingIndexCount > 0) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Info,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "${state.pendingIndexCount} PDF(s) pending text indexing",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+
             if (state.isLoading) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -194,6 +216,19 @@ fun PdfListScreen(
                 ) {
                     CircularProgressIndicator()
                 }
+            } else if (state.searchQuery.isNotBlank() && state.searchResults.isNotEmpty()) {
+                SearchResultsContent(
+                    nameResults = state.groups,
+                    contentResults = state.searchResults,
+                    selectedUris = state.selectedUris,
+                    thumbnails = viewModel.thumbnails,
+                    isSelectionMode = isSelectionMode,
+                    onOpenPdf = onOpenPdf,
+                    onOpenPdfAtPage = onOpenPdfAtPage,
+                    onToggleSelection = viewModel::toggleSelection,
+                    onThumbnailRequest = viewModel::loadThumbnail,
+                    modifier = Modifier.fillMaxSize()
+                )
             } else if (state.groups.isEmpty()) {
                 EmptyPdfList(
                     hasSearch = state.searchQuery.isNotEmpty(),
@@ -614,6 +649,124 @@ fun PdfGridItem(
                         )
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun SearchResultsContent(
+    nameResults: List<PdfGroup>,
+    contentResults: List<PdfSearchResult>,
+    selectedUris: Set<Uri>,
+    thumbnails: Map<Uri, Bitmap>,
+    isSelectionMode: Boolean,
+    onOpenPdf: (String, String) -> Unit,
+    onOpenPdfAtPage: (String, String, Int) -> Unit,
+    onToggleSelection: (Uri) -> Unit,
+    onThumbnailRequest: (Uri) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(
+        modifier = modifier,
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 80.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        if (nameResults.isNotEmpty()) {
+            item(key = "name_header") {
+                SectionHeader(label = "Matching Files")
+            }
+            nameResults.forEach { group ->
+                items(
+                    items = group.documents,
+                    key = { "name_${it.uri.toString()}" }
+                ) { doc ->
+                    PdfListItem(
+                        document = doc,
+                        thumbnail = thumbnails[doc.uri],
+                        isSelected = selectedUris.contains(doc.uri),
+                        isSelectionMode = isSelectionMode,
+                        onThumbnailRequest = { onThumbnailRequest(doc.uri) },
+                        onClick = {
+                            if (isSelectionMode) {
+                                onToggleSelection(doc.uri)
+                            } else {
+                                onOpenPdf(doc.uri.toString(), doc.name)
+                            }
+                        },
+                        onLongClick = {
+                            onToggleSelection(doc.uri)
+                        }
+                    )
+                }
+            }
+        }
+
+        if (contentResults.isNotEmpty()) {
+            item(key = "content_header") {
+                SectionHeader(label = "Found in Content")
+            }
+            items(
+                items = contentResults,
+                key = { "${it.uri}_${it.pageNumber}" }
+            ) { result ->
+                SearchResultItem(
+                    result = result,
+                    onClick = { onOpenPdfAtPage(result.uri, result.fileName, result.pageNumber - 1) }
+                )
+            }
+        }
+
+        if (nameResults.isEmpty() && contentResults.isEmpty()) {
+            item(key = "empty_search") {
+                EmptyPdfList(hasSearch = true, modifier = Modifier.fillParentMaxSize())
+            }
+        }
+    }
+}
+
+@Composable
+fun SearchResultItem(
+    result: PdfSearchResult,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Description,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "${result.fileName.removeSuffix(".pdf")} - Page ${result.pageNumber}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = result.pageText.take(200).replace("\n", " "),
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
             }
         }
     }

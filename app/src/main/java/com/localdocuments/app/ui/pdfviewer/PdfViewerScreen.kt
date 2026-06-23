@@ -99,6 +99,13 @@ fun PdfViewerScreen(
         } else {
             val listState = rememberLazyListState()
 
+            LaunchedEffect(state.pageCount) {
+                val target = viewModel.initialPage
+                if (target > 0 && target < state.pageCount) {
+                    listState.scrollToItem(target)
+                }
+            }
+
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()

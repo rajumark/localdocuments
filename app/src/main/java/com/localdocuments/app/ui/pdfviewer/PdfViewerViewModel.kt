@@ -29,10 +29,14 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
 
     private var currentUri: Uri? = null
     private var screenWidth = 0
+    private var targetPage: Int = 0
 
-    fun loadPdf(uri: Uri, displayWidth: Int) {
+    val initialPage: Int get() = targetPage
+
+    fun loadPdf(uri: Uri, displayWidth: Int, page: Int = 0) {
         currentUri = uri
         screenWidth = displayWidth
+        targetPage = page.coerceAtLeast(0)
         pageBitmaps.clear()
         _uiState.value = PdfViewerUiState(isLoading = true)
         viewModelScope.launch(Dispatchers.IO) {
