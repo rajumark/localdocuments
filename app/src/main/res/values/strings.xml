@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LocalDocuments</string>
+    <string name="scan_document">Scan Document</string>
+    <string name="scanning">Scanning…</string>
+    <string name="scanned_pages">Scanned Pages</string>
+    <string name="no_documents">No documents scanned yet</string>
+    <string name="scan_description">Tap the button below to scan a physical document using your camera</string>
+    <string name="scanner_mode">Scanner Mode</string>
+    <string name="gallery_import">Gallery Import</string>
+    <string name="page_limit">Page Limit</string>
+    <string name="share_pdf">Share PDF</string>
+    <string name="error_scanner_cancelled">Scanner cancelled</string>
+    <string name="error_scan_failed">Failed to scan document</string>
+    <string name="pages_count">%d page(s)</string>
+    <string name="pdf_ready">PDF ready: %d pages</string>
+    <string name="mode_full">Full</string>
+    <string name="mode_base">Base</string>
+    <string name="mode_base_filter">Base + Filter</string>
+</resources>
