@@ -25,7 +25,7 @@ data class ScanPdf(
 data class ScannerSettings(
     val mode: ScannerMode = ScannerMode.FULL,
     val galleryImportEnabled: Boolean = true,
-    val pageLimit: Int = 5
+    val pageLimit: Int = 400
 )
 
 data class DocumentUiState(

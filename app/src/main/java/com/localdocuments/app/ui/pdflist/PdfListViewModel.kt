@@ -1,6 +1,7 @@
 package com.localdocuments.app.ui.pdflist
 
 import android.app.Application
+import android.content.ContentResolver
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.runtime.mutableStateMapOf
@@ -21,7 +22,10 @@ data class PdfListUiState(
     val groups: List<PdfGroup> = emptyList(),
     val searchQuery: String = "",
     val isLoading: Boolean = false,
-    val isPermissionGranted: Boolean = false
+    val isPermissionGranted: Boolean = false,
+    val isGridView: Boolean = false,
+    val selectedUris: Set<Uri> = emptySet(),
+    val showDeleteConfirmation: Boolean = false
 )
 
 class PdfListViewModel(application: Application) : AndroidViewModel(application) {
@@ -34,6 +38,8 @@ class PdfListViewModel(application: Application) : AndroidViewModel(application)
     private var allDocuments: List<PdfDocument> = emptyList()
 
     val thumbnails: MutableMap<Uri, Bitmap> = mutableStateMapOf()
+
+    val isSelectionMode: Boolean get() = _uiState.value.selectedUris.isNotEmpty()
 
     fun loadDocuments() {
         if (!_uiState.value.isPermissionGranted) return
@@ -55,14 +61,68 @@ class PdfListViewModel(application: Application) : AndroidViewModel(application)
         updateGroups()
     }
 
+    fun toggleViewMode() {
+        _uiState.update { it.copy(isGridView = !it.isGridView) }
+    }
+
     fun loadThumbnail(uri: Uri) {
         if (thumbnails.containsKey(uri)) return
         viewModelScope.launch(Dispatchers.IO) {
-            val bitmap = repository.renderThumbnail(uri, 120, 160)
+            val bitmap = repository.renderThumbnail(uri, 240, 320)
             if (bitmap != null) {
                 thumbnails[uri] = bitmap
             }
         }
+    }
+
+    fun toggleSelection(uri: Uri) {
+        _uiState.update {
+            val current = it.selectedUris.toMutableSet()
+            if (current.contains(uri)) current.remove(uri) else current.add(uri)
+            it.copy(selectedUris = current)
+        }
+    }
+
+    fun clearSelection() {
+        _uiState.update { it.copy(selectedUris = emptySet()) }
+    }
+
+    fun selectAll() {
+        val allUris = allDocuments.map { it.uri }.toSet()
+        _uiState.update { it.copy(selectedUris = allUris) }
+    }
+
+    fun showDeleteConfirmation() {
+        _uiState.update { it.copy(showDeleteConfirmation = true) }
+    }
+
+    fun dismissDeleteConfirmation() {
+        _uiState.update { it.copy(showDeleteConfirmation = false) }
+    }
+
+    fun deleteSelected(contentResolver: ContentResolver) {
+        val uris = _uiState.value.selectedUris.toList()
+        viewModelScope.launch(Dispatchers.IO) {
+            uris.forEach { uri ->
+                try {
+                    contentResolver.delete(uri, null, null)
+                } catch (_: Exception) { }
+            }
+            allDocuments = allDocuments.filter { it.uri !in uris }
+            thumbnails.keys.removeAll(uris)
+            _uiState.update {
+                it.copy(
+                    selectedUris = emptySet(),
+                    showDeleteConfirmation = false
+                )
+            }
+            updateGroups()
+        }
+    }
+
+    fun getSelectedDocuments(): List<PdfDocument> {
+        val selected = _uiState.value.selectedUris
+        return allDocuments.filter { it.uri in selected }
     }
 
     private fun updateGroups() {
