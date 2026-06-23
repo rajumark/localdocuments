@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="LocalDocuments — On-device document scanner powered by ML Kit. Scan physical documents using your camera — 100% private, no internet required.">
+  <title>LocalDocuments</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #1a1a2e;
+      --muted: #6b7280;
+      --accent: #00A3A3;
+      --accent-hover: #008080;
+      --card: #f0fdfa;
+      --border: #e5e7eb;
+      --radius: 8px;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+      --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d1b1b;
+        --fg: #e1e1e6;
+        --muted: #9ca3af;
+        --accent: #80E5E5;
+        --accent-hover: #B3F0F0;
+        --card: #143333;
+        --border: #1f4d4d;
+      }
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { color: var(--accent-hover); }
+
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      font-weight: 600;
+      font-size: 1.05rem;
+      color: var(--fg);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 20px;
+      list-style: none;
+      font-size: 0.875rem;
+    }
+
+    .nav-links a { color: var(--muted); }
+    .nav-links a:hover { color: var(--fg); }
+
+    section { padding: 80px 0; }
+    section:first-of-type { padding-top: 100px; }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+      line-height: 1.2;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin-bottom: 24px;
+    }
+
+    .hero p {
+      font-size: 1.1rem;
+      color: var(--muted);
+      max-width: 560px;
+      margin-bottom: 32px;
+    }
+
+    .tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 32px;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 24px;
+      border-radius: var(--radius);
+      font-weight: 500;
+      font-size: 0.925rem;
+      transition: all 0.15s;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover { background: var(--accent-hover); color: #fff; }
+
+    .btn-outline {
+      border: 1px solid var(--border);
+      color: var(--fg);
+    }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .feature-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+
+    .feature-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .feature-card p {
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+
+    .arch-diagram {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+    }
+
+    .arch-diagram pre {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      line-height: 1.7;
+      overflow-x: auto;
+      color: var(--muted);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 10px 0;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+
+    th {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    td:last-child { color: var(--muted); }
+
+    footer {
+      text-align: center;
+      padding: 40px 0;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 640px) {
+      h1 { font-size: 1.75rem; }
+      section { padding: 60px 0; }
+      section:first-of-type { padding-top: 60px; }
+      nav { flex-direction: column; gap: 12px; }
+      .arch-diagram pre { font-size: 0.65rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav>
+      <div class="logo"><img src="icon.svg" width="24" height="24" style="vertical-align:middle; margin-right:6px; border-radius:5px;" alt="">LocalDocuments</div>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#tech-stack">Stack</a></li>
+        <li><a href="https://github.com/rajumark/localdocuments">GitHub</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <section>
+    <div class="container">
+      <h1>LocalDocuments</h1>
+      <p>On-device document scanner powered by ML Kit. Scan physical documents using your camera — no internet required, 100% private.</p>
+      <div class="tags">
+        <span class="tag">ML Kit</span>
+        <span class="tag">On-Device</span>
+        <span class="tag">Android 8.0+</span>
+        <span class="tag">Material 3</span>
+      </div>
+      <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <a href="https://github.com/rajumark/localdocuments/releases" class="btn btn-primary">Download APK</a>
+        <a href="https://github.com/rajumark/localdocuments" class="btn btn-outline">View on GitHub</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="container">
+    <section id="features">
+      <h2>Features</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <h3>No Camera Permission Needed</h3>
+          <p>Google Play Services handles the camera. Your app never needs direct camera access.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Automatic Capture</h3>
+          <p>Document detection enables automatic capture. Point and scan without tapping a button.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Edge Detection & Crop</h3>
+          <p>Accurate edge detection automatically crops your document at the optimal boundary.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Filters & Cleaning</h3>
+          <p>Apply grayscale, auto-enhance, remove shadows, erase stains and fingers with ML-powered cleaning.</p>
+        </div>
+        <div class="feature-card">
+          <h3>JPEG & PDF Output</h3>
+          <p>Export scans as JPEG images or a multi-page PDF document. Share directly from the app.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Gallery Import</h3>
+          <p>Import existing photos from your gallery to convert them into scanned documents.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Page Limit</h3>
+          <p>Set a maximum number of pages per scan session. Supports multi-page document scanning.</p>
+        </div>
+        <div class="feature-card">
+          <h3>100% On-Device</h3>
+          <p>All scanning, filtering, and OCR processing happens on your device. Nothing is uploaded to the cloud.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="architecture">
+      <h2>Architecture</h2>
+      <div class="arch-diagram">
+<pre>
+  LocalDocuments (Compose UI)
+        |
+        v
+  GmsDocumentScanning API
+  (ML Kit Document Scanner)
+        |
+        v
+  Google Play Services
+  (Camera, Edge Detection, Filters, PDF Generation)
+        |
+  No Camera Permission . No Internet . 100% On-Device
+</pre>
+      </div>
+    </section>
+
+    <section id="tech-stack">
+      <h2>Tech Stack</h2>
+      <table>
+        <thead>
+          <tr><th>Layer</th><th>Technology</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Language</td><td>Kotlin 2.0.21</td></tr>
+          <tr><td>UI Framework</td><td>Jetpack Compose + Material 3</td></tr>
+          <tr><td>Theming</td><td>Dynamic Color (Material You)</td></tr>
+          <tr><td>Architecture</td><td>Single Activity + ViewModel + StateFlow</td></tr>
+          <tr><td>Document Scanner</td><td>ML Kit Document Scanner API 16.0.0</td></tr>
+          <tr><td>Image Loading</td><td>Coil 2.7.0</td></tr>
+          <tr><td>Min SDK</td><td>API 26 (Android 8.0)</td></tr>
+          <tr><td>Target SDK</td><td>API 35 (Android 15)</td></tr>
+          <tr><td>Build System</td><td>Gradle 8.12 + AGP 8.7.3</td></tr>
+          <tr><td>CI/CD</td><td>GitHub Actions</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>Built with Kotlin &amp; Jetpack Compose</p>
+      <p style="margin-top:6px"><a href="https://github.com/rajumark/localdocuments">GitHub</a> &middot; MIT License</p>
+    </div>
+  </footer>
+</body>
+</html>
