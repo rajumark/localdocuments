@@ -38,9 +38,7 @@
 
 | Scanner Settings | Scan Preview | Scan Result |
 |:---:|:---:|:---:|
-| *screenshot_1.png* | *screenshot_2.png* | *screenshot_3.png* |
-
-> **Note:** Add screenshots to the `docs/` folder and update the table above.
+| <img src="screenshots/Screenshot_1782295592.png" width="200" alt="Scanner Settings"> | <img src="screenshots/Screenshot_1782295598.png" width="200" alt="Scan Preview"> | <img src="screenshots/Screenshot_1782295618.png" width="200" alt="Scan Result"> |
 
 ## 🛠️ Tech Stack
 
@@ -157,6 +155,10 @@ localdocuments/
 ├── docs/
 │   ├── icon.svg                         # App icon for landing page
 │   └── index.html                       # Project landing page
+├── screenshots/
+│   ├── Screenshot_1782295592.png        # Scanner settings screen
+│   ├── Screenshot_1782295598.png        # Scan preview screen
+│   └── Screenshot_1782295618.png        # Scan result screen
 ├── .github/workflows/
 │   └── release.yml                      # CI/CD pipeline for APK
 ├── build.gradle.kts                     # Root build config
